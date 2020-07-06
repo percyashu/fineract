@@ -24,7 +24,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
-import org.joda.time.MonthDay;
+import java.time.MonthDay;
 
 /**
  * Serializer for Joda Time {@link MonthDay} that returns the date in array format to match previous Jackson
@@ -38,7 +38,7 @@ public class JodaMonthDayAdapter implements JsonSerializer<MonthDay> {
         JsonArray array = null;
         if (src != null) {
             array = new JsonArray();
-            array.add(new JsonPrimitive(src.getMonthOfYear()));
+            array.add(new JsonPrimitive(src.getMonthValue()));
             array.add(new JsonPrimitive(src.getDayOfMonth()));
         }
         return array;

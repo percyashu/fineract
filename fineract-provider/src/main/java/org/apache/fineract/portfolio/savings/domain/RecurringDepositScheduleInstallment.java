@@ -19,6 +19,9 @@
 package org.apache.fineract.portfolio.savings.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,7 +33,6 @@ import javax.persistence.TemporalType;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
-import org.joda.time.LocalDate;
 
 @Entity
 @Table(name = "m_mandatory_savings_schedule")
@@ -168,7 +170,7 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
     }
 
     public LocalDate dueDate() {
-        return (this.dueDate == null) ? null : new LocalDate(this.dueDate);
+        return (this.dueDate == null) ? null : ZonedDateTime.ofInstant(this.dueDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
     }
 
     public Money payInstallment(final LocalDate transactionDate, final Money transactionAmountRemaining) {
@@ -197,7 +199,7 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
     private void checkIfInstallmentObligationsAreMet(final LocalDate transactionDate, final MonetaryCurrency currency) {
         this.obligationsMet = getTotalOutstanding(currency).isZero();
         if (this.obligationsMet) {
-            this.obligationsMetOnDate = transactionDate.toDate();
+            this.obligationsMetOnDate = Date.from(transactionDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         }
     }
 

@@ -18,10 +18,16 @@
  */
 package org.apache.fineract.portfolio.calendar.service;
 
+import static java.time.temporal.ChronoField.DAY_OF_MONTH;
+
 import com.google.gson.JsonElement;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -48,9 +54,6 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarWeekDaysType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,10 +78,10 @@ public class CalendarUtils {
     public static LocalDate adjustDate(final LocalDate date, final LocalDate seedDate, final PeriodFrequencyType frequencyType) {
         LocalDate adjustedVal = date;
         if (frequencyType.isMonthly() && seedDate.getDayOfMonth() > 28) {
-            switch (date.getMonthOfYear()) {
+            switch (date.getMonthValue()) {
                 case 2:
-                    if (date.year().isLeap()) {
-                        adjustedVal = date.dayOfMonth().setCopy(29);
+                    if (date.isLeapYear()) {
+                        adjustedVal = date.with(DAY_OF_MONTH, 29);
                     }
                 break;
                 case 4:
@@ -86,9 +89,9 @@ public class CalendarUtils {
                 case 9:
                 case 11:
                     if (seedDate.getDayOfMonth() > 30) {
-                        adjustedVal = date.dayOfMonth().setCopy(30);
+                        adjustedVal = date.with(DAY_OF_MONTH, 30);
                     } else {
-                        adjustedVal = date.dayOfMonth().setCopy(seedDate.getDayOfMonth());
+                        adjustedVal = date.with(DAY_OF_MONTH, seedDate.getDayOfMonth());
                     }
                 break;
                 case 1:
@@ -98,7 +101,7 @@ public class CalendarUtils {
                 case 8:
                 case 10:
                 case 12:
-                    adjustedVal = date.dayOfMonth().setCopy(seedDate.getDayOfMonth());
+                    adjustedVal = date.with(DAY_OF_MONTH, seedDate.getDayOfMonth());
                 break;
             }
         }
@@ -106,17 +109,17 @@ public class CalendarUtils {
     }
 
     private static LocalDate getNextRecurringDate(final Recur recur, final LocalDate seedDate, final LocalDate startDate) {
-        final DateTime periodStart = new DateTime(startDate.toDate());
+        final DateTime periodStart = new DateTime(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
         final Date seed = convertToiCal4JCompatibleDate(seedDate);
         final Date nextRecDate = recur.getNextDate(seed, periodStart);
-        return nextRecDate == null ? null : new LocalDate(nextRecDate);
+        return nextRecDate == null ? null : ZonedDateTime.ofInstant(nextRecDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
     }
 
     private static Date convertToiCal4JCompatibleDate(final LocalDate inputDate) {
         // Date format in iCal4J is hard coded
         Date formattedDate = null;
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        final String seedDateStr = df.format(inputDate.toDateTimeAtStartOfDay().toDate());
+        final String seedDateStr = df.format(inputDate.atStartOfDay());
         try {
             formattedDate = new Date(seedDateStr, "yyyy-MM-dd");
         } catch (final ParseException e) {
@@ -163,8 +166,8 @@ public class CalendarUtils {
             return null;
         }
         final Date seed = convertToiCal4JCompatibleDate(seedDate);
-        final DateTime periodStart = new DateTime(periodStartDate.toDate());
-        final DateTime periodEnd = new DateTime(periodEndDate.toDate());
+        final DateTime periodStart = new DateTime(Date.from(periodStartDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        final DateTime periodEnd = new DateTime(Date.from(periodEndDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 
         final Value value = new Value(Value.DATE.getValue());
         final DateList recurringDates = recur.getDates(seed, periodStart, periodEnd, value, maxCount);
@@ -180,7 +183,8 @@ public class CalendarUtils {
         for (@SuppressWarnings("rawtypes")
         final Iterator iterator = dates.iterator(); iterator.hasNext();) {
             final Date date = (Date) iterator.next();
-            recurringDates.add(adjustDate(new LocalDate(date), seedDate, frequencyType));
+            recurringDates.add(
+                    adjustDate(ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()).toLocalDate(), seedDate, frequencyType));
         }
 
         if (isSkippMeetingOnFirstDay) {
@@ -324,9 +328,10 @@ public class CalendarUtils {
             }
         } else if (recur.getFrequency().equals(Recur.Frequency.YEARLY)) {
             if (recur.getInterval() == 1) {
-                humanReadable = "Annually on " + startDate.toString("MMM") + " " + startDate.getDayOfMonth();
+                humanReadable = "Annually on " + startDate.format(DateTimeFormatter.ofPattern("MMM")) + " " + startDate.getDayOfMonth();
             } else {
-                humanReadable = "Every " + recur.getInterval() + " years on " + startDate.toString("MMM") + " " + startDate.getDayOfMonth();
+                humanReadable = "Every " + recur.getInterval() + " years on " + startDate.format(DateTimeFormatter.ofPattern("MMM")) + " "
+                        + startDate.getDayOfMonth();
             }
         }
 
@@ -338,9 +343,9 @@ public class CalendarUtils {
         }
 
         final Date endDate = recur.getUntil();
-        final LocalDate date = new LocalDate(endDate);
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern("dd MMMM YY");
-        final String formattedDate = date.toString(fmt);
+        final LocalDate date = ZonedDateTime.ofInstant(endDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
+        final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM yy");
+        final String formattedDate = date.format(fmt);
         if (endDate != null) {
             humanReadable += ", until " + formattedDate;
         }

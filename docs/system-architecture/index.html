@@ -534,7 +534,7 @@ public CommandProcessingResult processAndLogCommand(final CommandWrapper wrapper
     CommandSource commandSourceResult = null;
     if (command.commandId() != null) {
         commandSourceResult = this.commandSourceRepository.findOne(command.commandId());
-        commandSourceResult.markAsChecked(maker, DateTime.now());
+        commandSourceResult.markAsChecked(maker, ZonedDateTime.now());
     } else {
         commandSourceResult = CommandSource.fullEntryFrom(wrapper, command, maker);
     }

@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.adhocquery.service;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Date;
 import org.apache.fineract.adhocquery.data.AdHocData;
@@ -26,11 +29,6 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
-import org.joda.time.DateTime;
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
-import org.joda.time.Months;
-import org.joda.time.Years;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,27 +63,27 @@ public class AdHocScheduledJobRunnerServiceImpl implements AdHocScheduledJobRunn
                 if (adhoc.getReportRunFrequency() != null) {
                     if (adhoc.getLastRun() != null) {
                         LocalDate start = adhoc.getLastRun().toLocalDate();
-                        LocalDate end = new DateTime().toLocalDate();
+                        LocalDate end = ZonedDateTime.now().toLocalDate();
                         switch (ReportRunFrequency.fromId(adhoc.getReportRunFrequency())) {
                             case DAILY:
                                 next = start.plusDays(1);
-                                run = Days.daysBetween(start, end).getDays() >= 1;
+                                run = Period.between(start, end).getDays() >= 1;
                             break;
                             case WEEKLY:
                                 next = start.plusDays(7);
-                                run = Days.daysBetween(start, end).getDays() >= 7;
+                                run = Period.between(start, end).getDays() >= 7;
                             break;
                             case MONTHLY:
                                 next = start.plusMonths(1);
-                                run = Months.monthsBetween(start, end).getMonths() >= 1;
+                                run = Period.between(start, end).getMonths() >= 1;
                             break;
                             case YEARLY:
                                 next = start.plusYears(1);
-                                run = Years.yearsBetween(start, end).getYears() >= 1;
+                                run = Period.between(start, end).getYears() >= 1;
                             break;
                             case CUSTOM:
                                 next = start.plusDays((int) (long) adhoc.getReportRunEvery());
-                                run = Days.daysBetween(start, end).getDays() >= adhoc.getReportRunEvery();
+                                run = Period.between(start, end).getDays() >= adhoc.getReportRunEvery();
                             break;
                             default:
                                 throw new IllegalStateException();

@@ -18,6 +18,11 @@
  */
 package org.apache.fineract.infrastructure.campaigns.email.domain;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -43,10 +48,6 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.dataqueries.domain.Report;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 @Entity
 @Table(name = "scheduled_email_campaign")
@@ -152,15 +153,15 @@ public class EmailCampaign extends AbstractPersistableCustom {
         this.emailAttachmentFileFormat = emailAttachmentFileFormat.getValue();
         this.stretchyReport = stretchyReport;
         this.stretchyReportParamMap = stretchyReportParamMap;
-        this.submittedOnDate = submittedOnDate.toDate();
+        this.submittedOnDate = Date.from(submittedOnDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.submittedBy = submittedBy;
         this.recurrence = recurrence;
-        LocalDateTime recurrenceStartDate = new LocalDateTime();
+        LocalDateTime recurrenceStartDate = LocalDateTime.now();
         this.isVisible = true;
         if (localDateTime != null) {
-            this.recurrenceStartDate = localDateTime.toDate();
+            this.recurrenceStartDate = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
         } else {
-            this.recurrenceStartDate = recurrenceStartDate.toDate();
+            this.recurrenceStartDate = Date.from(recurrenceStartDate.atZone(ZoneId.systemDefault()).toInstant());
         }
 
     }
@@ -184,16 +185,16 @@ public class EmailCampaign extends AbstractPersistableCustom {
         } else {
             emailAttachmentFileFormat = ScheduledEmailAttachmentFileFormat.instance(2);
         }
-        LocalDate submittedOnDate = new LocalDate();
+        LocalDate submittedOnDate = LocalDate.now();
         if (command.hasParameter(EmailCampaignValidator.submittedOnDateParamName)) {
             submittedOnDate = command.localDateValueOfParameterNamed(EmailCampaignValidator.submittedOnDateParamName);
         }
 
         final String recurrence = command.stringValueOfParameterNamed(EmailCampaignValidator.recurrenceParamName);
         final Locale locale = command.extractLocale();
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
+        final DateTimeFormatter fmt = DateTimeFormatter.ofPattern(command.dateFormat()).withLocale(locale);
 
-        LocalDateTime recurrenceStartDate = new LocalDateTime();
+        LocalDateTime recurrenceStartDate = LocalDateTime.now();
         if (EmailCampaignType.fromInt(campaignType.intValue()).isSchedule()) {
             if (command.hasParameter(EmailCampaignValidator.recurrenceStartDate)) {
                 recurrenceStartDate = LocalDateTime.parse(command.stringValueOfParameterNamed(EmailCampaignValidator.recurrenceStartDate),
@@ -245,7 +246,7 @@ public class EmailCampaign extends AbstractPersistableCustom {
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
         final Locale locale = command.extractLocale();
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
+        final DateTimeFormatter fmt = DateTimeFormatter.ofPattern(command.dateFormat()).withLocale(locale);
 
         if (command.isChangeInLocalDateParameterNamed(EmailCampaignValidator.recurrenceStartDate, getRecurrenceStartDate())) {
             final String valueAsInput = command.stringValueOfParameterNamed(EmailCampaignValidator.recurrenceStartDate);
@@ -255,7 +256,7 @@ public class EmailCampaign extends AbstractPersistableCustom {
 
             final LocalDateTime newValue = LocalDateTime.parse(valueAsInput, fmt);
 
-            this.recurrenceStartDate = newValue.toDate();
+            this.recurrenceStartDate = Date.from(newValue.atZone(ZoneId.systemDefault()).toInstant());
         }
 
         return actualChanges;
@@ -267,14 +268,14 @@ public class EmailCampaign extends AbstractPersistableCustom {
             // handle errors if already activated
             final String defaultUserMessage = "Cannot activate campaign. Campaign is already active.";
             final ApiParameterError error = ApiParameterError.parameterError("error.msg.campaign.already.active", defaultUserMessage,
-                    EmailCampaignValidator.activationDateParamName, activationLocalDate.toString(formatter));
+                    EmailCampaignValidator.activationDateParamName, activationLocalDate.format(formatter));
 
             final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
             dataValidationErrors.add(error);
 
             throw new PlatformApiDataValidationException(dataValidationErrors);
         }
-        this.approvedOnDate = activationLocalDate.toDate();
+        this.approvedOnDate = Date.from(activationLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.approvedBy = currentUser;
         this.status = EmailCampaignStatus.ACTIVE.getValue();
 
@@ -298,7 +299,7 @@ public class EmailCampaign extends AbstractPersistableCustom {
             this.lastTriggerDate = null;
         }
         this.closedBy = currentUser;
-        this.closureDate = closureLocalDate.toDate();
+        this.closureDate = Date.from(closureLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.status = EmailCampaignStatus.CLOSED.getValue();
         validateClosureDate();
     }
@@ -317,7 +318,7 @@ public class EmailCampaign extends AbstractPersistableCustom {
             throw new PlatformApiDataValidationException(dataValidationErrors);
         }
 
-        this.approvedOnDate = reactivateLocalDate.toDate();
+        this.approvedOnDate = Date.from(reactivateLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.status = EmailCampaignStatus.ACTIVE.getValue();
         this.approvedBy = currentUser;
         this.closureDate = null;
@@ -456,18 +457,19 @@ public class EmailCampaign extends AbstractPersistableCustom {
     }
 
     public LocalDate getSubmittedOnDate() {
-        return ObjectUtils.defaultIfNull(new LocalDate(this.submittedOnDate), null);
+        return ObjectUtils.defaultIfNull(ZonedDateTime.ofInstant(this.submittedOnDate.toInstant(), ZoneId.systemDefault()).toLocalDate(),
+                null);
 
     }
 
     public LocalDate getClosureDate() {
-        return ObjectUtils.defaultIfNull(new LocalDate(this.closureDate), null);
+        return ObjectUtils.defaultIfNull(ZonedDateTime.ofInstant(this.closureDate.toInstant(), ZoneId.systemDefault()).toLocalDate(), null);
     }
 
     public LocalDate getActivationLocalDate() {
         LocalDate activationLocalDate = null;
         if (this.approvedOnDate != null) {
-            activationLocalDate = LocalDate.fromDateFields(this.approvedOnDate);
+            activationLocalDate = LocalDateTime.ofInstant(this.approvedOnDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
         }
         return activationLocalDate;
     }
@@ -501,11 +503,13 @@ public class EmailCampaign extends AbstractPersistableCustom {
     }
 
     public LocalDate getRecurrenceStartDate() {
-        return ObjectUtils.defaultIfNull(new LocalDate(this.recurrenceStartDate), null);
+        return ObjectUtils
+                .defaultIfNull(ZonedDateTime.ofInstant(this.recurrenceStartDate.toInstant(), ZoneId.systemDefault()).toLocalDate(), null);
     }
 
     public LocalDateTime getRecurrenceStartDateTime() {
-        return ObjectUtils.defaultIfNull(new LocalDateTime(this.recurrenceStartDate), null);
+        return ObjectUtils.defaultIfNull(
+                ZonedDateTime.ofInstant(this.recurrenceStartDate.toInstant(), ZoneId.systemDefault()).toLocalDateTime(), null);
     }
 
     public void setLastTriggerDate(Date lastTriggerDate) {
@@ -517,7 +521,8 @@ public class EmailCampaign extends AbstractPersistableCustom {
     }
 
     public LocalDateTime getNextTriggerDate() {
-        return ObjectUtils.defaultIfNull(new LocalDateTime(this.nextTriggerDate), null);
+        return ObjectUtils
+                .defaultIfNull(ZonedDateTime.ofInstant(this.nextTriggerDate.toInstant(), ZoneId.systemDefault()).toLocalDateTime(), null);
 
     }
 
@@ -526,7 +531,8 @@ public class EmailCampaign extends AbstractPersistableCustom {
     }
 
     public LocalDate getLastTriggerDate() {
-        return ObjectUtils.defaultIfNull(new LocalDate(this.lastTriggerDate), null);
+        return ObjectUtils.defaultIfNull(ZonedDateTime.ofInstant(this.lastTriggerDate.toInstant(), ZoneId.systemDefault()).toLocalDate(),
+                null);
     }
 
     public void updateIsVisible(boolean isVisible) {

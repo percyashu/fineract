@@ -35,6 +35,8 @@ import static org.apache.fineract.interoperation.util.InteropUtil.PARAM_TRANSACT
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.validation.constraints.NotNull;
@@ -44,8 +46,6 @@ import org.apache.fineract.interoperation.domain.InteropTransactionRole;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.codehaus.jackson.map.annotate.JsonDeserialize;
 import org.codehaus.jackson.map.ext.JodaDeserializers;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
 
 public class InteropRequestData {
 

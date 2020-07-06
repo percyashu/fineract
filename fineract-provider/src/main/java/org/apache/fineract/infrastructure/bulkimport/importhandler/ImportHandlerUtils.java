@@ -20,6 +20,9 @@ package org.apache.fineract.infrastructure.bulkimport.importhandler;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -37,7 +40,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.SheetVisibility;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellReference;
-import org.joda.time.LocalDate;
 
 public class ImportHandlerUtils {
 
@@ -140,7 +142,7 @@ public class ImportHandlerUtils {
             return null;
         }
 
-        LocalDate localDate = new LocalDate(c.getDateCellValue());
+        LocalDate localDate = ZonedDateTime.ofInstant(c.getDateCellValue().toInstant(), ZoneId.systemDefault()).toLocalDate();
         return localDate;
     }
 

@@ -422,6 +422,8 @@ tasks.withType(JavaCompile) {
                 "ReturnFromVoid",
                 "AlmostJavadoc",
                 "InvalidBlockTag",
+                "JavaPeriodGetDays",
+                "JavaTimeDefaultTimeZone"
                 )
         //TODO gradually enable these checks
         error(

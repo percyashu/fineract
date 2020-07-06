@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.client.domain;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -39,7 +42,6 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
-import org.joda.time.LocalDate;
 
 @Entity
 @Table(name = "m_client_non_person")
@@ -97,7 +99,7 @@ public class ClientNonPerson extends AbstractPersistableCustom {
         }
 
         if (incorpValidityTill != null) {
-            this.incorpValidityTill = incorpValidityTill.toDateTimeAtStartOfDay().toDate();
+            this.incorpValidityTill = Date.from(incorpValidityTill.atStartOfDay(ZoneId.systemDefault()).toInstant());
         }
 
         if (StringUtils.isNotBlank(remarks)) {
@@ -134,7 +136,8 @@ public class ClientNonPerson extends AbstractPersistableCustom {
     public LocalDate getIncorpValidityTillLocalDate() {
         LocalDate incorpValidityTillLocalDate = null;
         if (this.incorpValidityTill != null) {
-            incorpValidityTillLocalDate = LocalDate.fromDateFields(this.incorpValidityTill);
+            incorpValidityTillLocalDate = LocalDateTime.ofInstant(this.incorpValidityTill.toInstant(), ZoneId.systemDefault())
+                    .toLocalDate();
         }
         return incorpValidityTillLocalDate;
     }
@@ -189,7 +192,7 @@ public class ClientNonPerson extends AbstractPersistableCustom {
             actualChanges.put(ClientApiConstants.localeParamName, localeAsInput);
 
             final LocalDate newValue = command.localDateValueOfParameterNamed(ClientApiConstants.incorpValidityTillParamName);
-            this.incorpValidityTill = newValue.toDate();
+            this.incorpValidityTill = Date.from(newValue.atStartOfDay(ZoneId.systemDefault()).toInstant());
         }
 
         if (command.isChangeInLongParameterNamed(ClientApiConstants.constitutionIdParamName, constitutionId())) {

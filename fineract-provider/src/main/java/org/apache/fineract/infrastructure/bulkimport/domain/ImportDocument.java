@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.domain;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,7 +32,6 @@ import javax.persistence.TemporalType;
 import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.LocalDateTime;
 
 @Entity
 @Table(name = "m_import_document")
@@ -87,8 +88,8 @@ public class ImportDocument extends AbstractPersistableCustom {
             final Integer entity_type, final AppUser createdBy, final Integer totalRecords, final Integer successCount,
             final Integer failureCount) {
         this.document = document;
-        this.importTime = importTime.toDate();
-        this.endTime = endTime.toDate();
+        this.importTime = Date.from(importTime.atZone(ZoneId.systemDefault()).toInstant());
+        this.endTime = Date.from(endTime.atZone(ZoneId.systemDefault()).toInstant());
         this.completed = completed;
         this.entity_type = entity_type;
         this.createdBy = createdBy;
@@ -99,7 +100,7 @@ public class ImportDocument extends AbstractPersistableCustom {
     }
 
     public void update(final LocalDateTime endTime, final Integer successCount, final Integer errorCount) {
-        this.endTime = endTime.toDate();
+        this.endTime = Date.from(endTime.atZone(ZoneId.systemDefault()).toInstant());
         this.completed = Boolean.TRUE;
         this.successCount = successCount;
         this.failureCount = errorCount;

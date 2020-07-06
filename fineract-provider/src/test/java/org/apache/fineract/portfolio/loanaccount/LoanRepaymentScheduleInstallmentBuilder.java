@@ -18,13 +18,13 @@
  */
 package org.apache.fineract.portfolio.loanaccount;
 
+import java.time.LocalDate;
 import java.util.Set;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
-import org.joda.time.LocalDate;
 
 public class LoanRepaymentScheduleInstallmentBuilder {
 

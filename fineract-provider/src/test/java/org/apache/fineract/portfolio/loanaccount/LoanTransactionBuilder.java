@@ -18,8 +18,8 @@
  */
 package org.apache.fineract.portfolio.loanaccount;
 
+import java.time.LocalDate;
 import org.apache.fineract.organisation.monetary.domain.Money;
-import org.joda.time.LocalDate;
 
 public class LoanTransactionBuilder {
 

@@ -21,6 +21,8 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,9 +43,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleIns
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSummary;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +57,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
 
     private static final Logger LOG = LoggerFactory.getLogger(LoanArrearsAgingServiceImpl.class);
     private final BusinessEventNotifierService businessEventNotifierService;
-    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -309,7 +308,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         insertStatementBuilder.append(penaltyOverdue).append(",");
         BigDecimal totalOverDue = principalOverdue.add(interestOverdue).add(feeOverdue).add(penaltyOverdue);
         insertStatementBuilder.append(totalOverDue).append(",'");
-        insertStatementBuilder.append(this.formatter.print(overDueSince)).append("')");
+        insertStatementBuilder.append(this.formatter.format(overDueSince)).append("')");
         return insertStatementBuilder.toString();
     }
 
@@ -323,7 +322,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         insertStatementBuilder.append(penaltyOverdue).append(", mla.total_overdue_derived=");
         BigDecimal totalOverDue = principalOverdue.add(interestOverdue).add(feeOverdue).add(penaltyOverdue);
         insertStatementBuilder.append(totalOverDue).append(",mla.overdue_since_date_derived= '");
-        insertStatementBuilder.append(this.formatter.print(overDueSince)).append("' ");
+        insertStatementBuilder.append(this.formatter.format(overDueSince)).append("' ");
         insertStatementBuilder.append("WHERE  mla.loan_id=").append(loanId);
         return insertStatementBuilder.toString();
     }

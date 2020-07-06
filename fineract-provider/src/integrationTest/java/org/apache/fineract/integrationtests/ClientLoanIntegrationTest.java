@@ -31,9 +31,12 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +57,6 @@ import org.apache.fineract.integrationtests.common.savings.AccountTransferHelper
 import org.apache.fineract.integrationtests.common.savings.SavingsAccountHelper;
 import org.apache.fineract.integrationtests.common.savings.SavingsProductHelper;
 import org.apache.fineract.integrationtests.common.savings.SavingsStatusChecker;
-import org.joda.time.LocalDate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -3089,8 +3091,7 @@ public class ClientLoanIntegrationTest {
             final HashMap repayment = loanSchedule.get(i);
 
             final ArrayList<Integer> dueDateAsArray = (ArrayList<Integer>) repayment.get("dueDate");
-            final LocalDate transactionDate = new LocalDate(dueDateAsArray.get(0), dueDateAsArray.get(1), dueDateAsArray.get(2));
-
+            final LocalDate transactionDate = LocalDate.of(dueDateAsArray.get(0), dueDateAsArray.get(1), dueDateAsArray.get(2));
             final Float interestPortion = BigDecimal.valueOf(Double.valueOf(repayment.get("interestDue").toString()))
                     .subtract(BigDecimal.valueOf(Double.valueOf(repayment.get("interestWaived").toString())))
                     .subtract(BigDecimal.valueOf(Double.valueOf(repayment.get("interestWrittenOff").toString()))).floatValue();
@@ -4487,7 +4488,7 @@ public class ClientLoanIntegrationTest {
 
         // FINERACT-885: As loan may not have started exactly four months ago,
         // make final payment today and not four months from start (as that may be in the future)
-        fourMonthsfromNowCalendar.setTime(Utils.getLocalDateOfTenant().toDate());
+        fourMonthsfromNowCalendar.setTime(Date.from(Utils.getLocalDateOfTenant().atStartOfDay(ZoneId.systemDefault()).toInstant()));
         final String now = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         this.loanTransactionHelper.makeRefundByCash(now, Float.valueOf("20"), loanID);
@@ -4656,7 +4657,7 @@ public class ClientLoanIntegrationTest {
 
         // FINERACT-885: As loan may not have started exactly four months ago,
         // make final payment today and not four months from start (as that may be in the future)
-        fourMonthsfromNowCalendar.setTime(Utils.getLocalDateOfTenant().toDate());
+        fourMonthsfromNowCalendar.setTime(Date.from(Utils.getLocalDateOfTenant().atStartOfDay(ZoneId.systemDefault()).toInstant()));
         final String now = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         this.loanTransactionHelper.makeRefundByCash(now, Float.valueOf("20"), loanID);
@@ -4847,7 +4848,7 @@ public class ClientLoanIntegrationTest {
 
         // FINERACT-885: As loan may not have started exactly four months ago,
         // make final payment today and not four months from start (as that may be in the future)
-        fourMonthsfromNowCalendar.setTime(Utils.getLocalDateOfTenant().toDate());
+        fourMonthsfromNowCalendar.setTime(Date.from(Utils.getLocalDateOfTenant().atStartOfDay(ZoneId.systemDefault()).toInstant()));
         final String now = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         final String FROM_LOAN_ACCOUNT_TYPE = "1";

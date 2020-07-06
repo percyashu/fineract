@@ -25,6 +25,9 @@ import static org.apache.fineract.portfolio.savings.DepositsApiConstants.maxDepo
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.minDepositTermParamName;
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.minDepositTermTypeIdParamName;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.persistence.Column;
@@ -33,12 +36,6 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
 import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
-import org.joda.time.DateTimeConstants;
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
-import org.joda.time.Months;
-import org.joda.time.Weeks;
-import org.joda.time.Years;
 
 /**
  * DepositTermDetail encapsulates all the details of a {@link FixedDepositProduct} that are also used and persisted by a
@@ -214,16 +211,16 @@ public class DepositTermDetail {
 
         switch (periodFrequencyType) {
             case DAYS:
-                actualDepositPeriod = Days.daysBetween(periodStartDate, periodEndDate).getDays();
+                actualDepositPeriod = Period.between(periodStartDate, periodEndDate).getDays();
             break;
             case WEEKS:
-                actualDepositPeriod = Weeks.weeksBetween(periodStartDate, periodEndDate).getWeeks();
+                actualDepositPeriod = Math.toIntExact(Math.abs(ChronoUnit.WEEKS.between(periodStartDate, periodEndDate)));
             break;
             case MONTHS:
-                actualDepositPeriod = Months.monthsBetween(periodStartDate, periodEndDate).getMonths();
+                actualDepositPeriod = Period.between(periodStartDate, periodEndDate).getMonths();
             break;
             case YEARS:
-                actualDepositPeriod = Years.yearsBetween(periodStartDate, periodEndDate).getYears();
+                actualDepositPeriod = Period.between(periodStartDate, periodEndDate).getYears();
             break;
             case INVALID:
                 actualDepositPeriod = 0;// default value
@@ -239,7 +236,7 @@ public class DepositTermDetail {
                 toDays = period;
             break;
             case WEEKS:
-                toDays = period * DateTimeConstants.DAYS_PER_WEEK;
+                toDays = period * 7;
             break;
             case MONTHS:
                 toDays = period * 30;// converting to stard 30 days

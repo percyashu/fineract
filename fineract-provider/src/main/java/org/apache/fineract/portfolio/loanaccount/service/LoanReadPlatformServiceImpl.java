@@ -23,6 +23,11 @@ import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -115,10 +120,6 @@ import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -148,7 +149,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final PaginationHelper<LoanAccountData> paginationHelper = new PaginationHelper<>();
     private final LoanMapper loaanLoanMapper = new LoanMapper();
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory;
     private final FloatingRatesReadPlatformService floatingRatesReadPlatformService;
@@ -1151,7 +1152,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
                 Integer daysInPeriod = Integer.valueOf(0);
                 if (fromDate != null) {
-                    daysInPeriod = Days.daysBetween(fromDate, dueDate).getDays();
+                    daysInPeriod = Period.between(fromDate, dueDate).getDays();
                     loanTermInDays = Integer.valueOf(loanTermInDays.intValue() + daysInPeriod.intValue());
                 }
 
@@ -1611,7 +1612,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         Map<String, Object> paramMap = new HashMap<>(3);
         paramMap.put("active", LoanStatus.ACTIVE.getValue());
         paramMap.put("type", AccountingRuleType.ACCRUAL_PERIODIC.getValue());
-        paramMap.put("organisationstartdate", formatter.print(new LocalDate(organisationStartDate)));
+        paramMap.put("organisationstartdate",
+                formatter.format(ZonedDateTime.ofInstant(organisationStartDate.toInstant(), ZoneId.systemDefault()).toLocalDate()));
 
         return this.namedParameterJdbcTemplate.query(sqlBuilder.toString(), paramMap, mapper);
     }
@@ -1636,8 +1638,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         Map<String, Object> paramMap = new HashMap<>(4);
         paramMap.put("active", LoanStatus.ACTIVE.getValue());
         paramMap.put("type", AccountingRuleType.ACCRUAL_PERIODIC.getValue());
-        paramMap.put("tilldate", formatter.print(tillDate));
-        paramMap.put("organisationstartdate", formatter.print(new LocalDate(organisationStartDate)));
+        paramMap.put("tilldate", formatter.format(tillDate));
+        paramMap.put("organisationstartdate",
+                formatter.format(ZonedDateTime.ofInstant(organisationStartDate.toInstant(), ZoneId.systemDefault()).toLocalDate()));
 
         return this.namedParameterJdbcTemplate.query(sqlBuilder.toString(), paramMap, mapper);
     }
@@ -1820,9 +1823,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sqlBuilder.append(" ))");
         sqlBuilder.append(" group by ml.id");
         try {
-            String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
+            String currentdate = formatter.format(DateUtils.getLocalDateOfTenant());
             // will look only for yesterday modified rates
-            String yesterday = formatter.print(DateUtils.getLocalDateOfTenant().minusDays(1));
+            String yesterday = formatter.format(DateUtils.getLocalDateOfTenant().minusDays(1));
             return this.jdbcTemplate.queryForList(sqlBuilder.toString(), Long.class,
                     new Object[] { yesterday, LoanStatus.ACTIVE.getValue(), currentdate, currentdate, currentdate, yesterday });
         } catch (final EmptyResultDataAccessException e) {
@@ -1866,9 +1869,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sqlBuilder.append(" group by ml.id ");
         sqlBuilder.append(" limit ? ");
         try {
-            String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
+            String currentdate = formatter.format(DateUtils.getLocalDateOfTenant());
             // will look only for yesterday modified rates
-            String yesterday = formatter.print(DateUtils.getLocalDateOfTenant().minusDays(1));
+            String yesterday = formatter.format(DateUtils.getLocalDateOfTenant().minusDays(1));
             return Collections.synchronizedList(this.jdbcTemplate.queryForList(sqlBuilder.toString(), Long.class,
                     new Object[] { yesterday, LoanStatus.ACTIVE.getValue(), currentdate, currentdate, currentdate, yesterday,
                             maxLoanIdInList, officeHierarchy, pageSize }));
@@ -2054,7 +2057,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         final CurrencyData currencyData = applicationCurrency.toData();
 
-        final LocalDate earliestUnpaidInstallmentDate = new LocalDate();
+        final LocalDate earliestUnpaidInstallmentDate = LocalDate.now();
 
         final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REFUND_FOR_ACTIVE_LOAN);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
@@ -2072,10 +2075,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final Collection<InterestRatePeriodData> intRates = this.floatingRatesReadPlatformService
                     .retrieveInterestRatePeriods(loanData.loanProductId());
             for (final InterestRatePeriodData rate : intRates) {
-                if (rate.getFromDate().compareTo(loanData.getDisbursementDate().toDate()) > 0 && loanData.isFloatingInterestRate()) {
+                if (rate.getFromDate()
+                        .compareTo(Date.from(loanData.getDisbursementDate().atStartOfDay(ZoneId.systemDefault()).toInstant())) > 0
+                        && loanData.isFloatingInterestRate()) {
                     updateInterestRatePeriodData(rate, loanData);
                     intRatePeriodData.add(rate);
-                } else if (rate.getFromDate().compareTo(loanData.getDisbursementDate().toDate()) <= 0) {
+                } else if (rate.getFromDate()
+                        .compareTo(Date.from(loanData.getDisbursementDate().atStartOfDay(ZoneId.systemDefault()).toInstant())) <= 0) {
                     updateInterestRatePeriodData(rate, loanData);
                     intRatePeriodData.add(rate);
                     break;
@@ -2101,8 +2107,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
         rate.setEffectiveInterestRate(effectiveInterestRate);
 
-        if (rate.getFromDate().compareTo(loan.getDisbursementDate().toDate()) < 0) {
-            rate.setFromDate(loan.getDisbursementDate().toDate());
+        if (rate.getFromDate().compareTo(Date.from(loan.getDisbursementDate().atStartOfDay(ZoneId.systemDefault()).toInstant())) < 0) {
+            rate.setFromDate(Date.from(loan.getDisbursementDate().atStartOfDay(ZoneId.systemDefault()).toInstant()));
         }
     }
 
@@ -2117,7 +2123,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append(" and adddet.effective_date is not null ").append(" and trans.transaction_date is null ")
                 .append(" and adddet.effective_date < ? ");
         try {
-            String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
+            String currentdate = formatter.format(DateUtils.getLocalDateOfTenant());
             return this.jdbcTemplate.queryForList(sqlBuilder.toString(), Long.class, new Object[] { currentdate });
         } catch (final EmptyResultDataAccessException e) {
             return null;

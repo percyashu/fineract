@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.group.domain;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -59,7 +62,6 @@ import org.apache.fineract.portfolio.group.exception.GroupNotExistsInCenterExcep
 import org.apache.fineract.portfolio.group.exception.InvalidGroupStateTransitionException;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringAccount;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.LocalDate;
 
 @Entity
 @Table(name = "m_group")
@@ -208,7 +210,7 @@ public final class Group extends AbstractPersistableCustom {
             this.groupMembers.addAll(groupMembers);
         }
 
-        this.submittedOnDate = submittedOnDate.toDate();
+        this.submittedOnDate = Date.from(submittedOnDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.submittedBy = currentUser;
         this.staffHistory = null;
 
@@ -240,7 +242,8 @@ public final class Group extends AbstractPersistableCustom {
         validateStatusNotEqualToActiveAndLogError(dataValidationErrors);
         if (dataValidationErrors.isEmpty()) {
             this.status = GroupingTypeStatus.ACTIVE.getValue();
-            setActivationDate(activationLocalDate.toDate(), currentUser, dataValidationErrors);
+            setActivationDate(Date.from(activationLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant()), currentUser,
+                    dataValidationErrors);
         }
 
     }
@@ -334,7 +337,7 @@ public final class Group extends AbstractPersistableCustom {
 
             final LocalDate newValue = command.localDateValueOfParameterNamed(GroupingTypesApiConstants.activationDateParamName);
             if (newValue != null) {
-                this.activationDate = newValue.toDate();
+                this.activationDate = Date.from(newValue.atStartOfDay(ZoneId.systemDefault()).toInstant());
             }
         }
 
@@ -352,7 +355,7 @@ public final class Group extends AbstractPersistableCustom {
 
             final LocalDate newValue = command.localDateValueOfParameterNamed(GroupingTypesApiConstants.submittedOnDateParamName);
             if (newValue != null) {
-                this.submittedOnDate = newValue.toDate();
+                this.submittedOnDate = Date.from(newValue.atStartOfDay(ZoneId.systemDefault()).toInstant());
             }
         }
 
@@ -360,13 +363,14 @@ public final class Group extends AbstractPersistableCustom {
     }
 
     public LocalDate getSubmittedOnDate() {
-        return ObjectUtils.defaultIfNull(new LocalDate(this.submittedOnDate), null);
+        return ObjectUtils.defaultIfNull(ZonedDateTime.ofInstant(this.submittedOnDate.toInstant(), ZoneId.systemDefault()).toLocalDate(),
+                null);
     }
 
     public LocalDate getActivationLocalDate() {
         LocalDate activationLocalDate = null;
         if (this.activationDate != null) {
-            activationLocalDate = new LocalDate(this.activationDate);
+            activationLocalDate = ZonedDateTime.ofInstant(this.activationDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
         }
         return activationLocalDate;
     }
@@ -538,7 +542,7 @@ public final class Group extends AbstractPersistableCustom {
         }
 
         this.closureReason = closureReason;
-        this.closureDate = closureDate.toDate();
+        this.closureDate = Date.from(closureDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.status = GroupingTypeStatus.CLOSED.getValue();
         this.closedBy = currentUser;
     }

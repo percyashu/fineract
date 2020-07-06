@@ -19,6 +19,8 @@
 package org.apache.fineract.portfolio.shareaccounts.service;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -56,7 +58,6 @@ import org.apache.fineract.portfolio.shareaccounts.domain.ShareAccountTransactio
 import org.apache.fineract.portfolio.shareaccounts.serialization.ShareAccountDataSerializer;
 import org.apache.fineract.portfolio.shareproducts.domain.ShareProduct;
 import org.apache.fineract.portfolio.shareproducts.domain.ShareProductRepositoryWrapper;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -149,7 +150,8 @@ public class ShareAccountWritePlatformServiceJpaRepositoryImpl implements ShareA
             final Map<String, Object> transactionDto = new HashMap<>();
             transactionDto.put("officeId", account.getOfficeId());
             transactionDto.put("id", transaction.getId());
-            transactionDto.put("date", new LocalDate(transaction.getPurchasedDate()));
+            transactionDto.put("date",
+                    ZonedDateTime.ofInstant(transaction.getPurchasedDate().toInstant(), ZoneId.systemDefault()).toLocalDate());
             final Integer status = transaction.getTransactionStatus();
             final ShareAccountTransactionEnumData statusEnum = new ShareAccountTransactionEnumData(status.longValue(), null, null);
             final Integer type = transaction.getTransactionType();

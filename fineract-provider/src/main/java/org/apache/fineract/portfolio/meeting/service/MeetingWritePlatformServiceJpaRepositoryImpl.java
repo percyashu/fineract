@@ -29,6 +29,9 @@ import static org.apache.fineract.portfolio.meeting.MeetingApiConstants.meetingD
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -56,7 +59,6 @@ import org.apache.fineract.portfolio.meeting.data.MeetingDataValidator;
 import org.apache.fineract.portfolio.meeting.domain.Meeting;
 import org.apache.fineract.portfolio.meeting.domain.MeetingRepository;
 import org.apache.fineract.portfolio.meeting.domain.MeetingRepositoryWrapper;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -297,7 +299,7 @@ public class MeetingWritePlatformServiceJpaRepositoryImpl implements MeetingWrit
     private void handleMeetingDataIntegrityIssues(final Date meetingDate, final DataIntegrityViolationException dve) {
         final Throwable realCause = dve.getMostSpecificCause();
         if (realCause.getMessage().contains("unique_calendar_instance_id_meeting_date")) {
-            final LocalDate meetingDateLocal = LocalDate.fromDateFields(meetingDate);
+            final LocalDate meetingDateLocal = LocalDateTime.ofInstant(meetingDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
             throw new PlatformDataIntegrityException("error.msg.meeting.duplicate",
                     "A meeting with date '" + meetingDateLocal + "' already exists", meetingDateParamName, meetingDateLocal);
         }

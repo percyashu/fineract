@@ -26,6 +26,9 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -57,7 +60,6 @@ import org.apache.fineract.portfolio.loanaccount.service.LoanChargePaidByReadPla
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -140,7 +142,9 @@ public class LoanTransactionsApiResource {
             if (transactionDateParam == null) {
                 transactionDate = DateUtils.getLocalDateOfTenant();
             } else {
-                transactionDate = LocalDate.fromDateFields(transactionDateParam.getDate("transactionDate", dateFormat, locale));
+                transactionDate = LocalDateTime
+                        .ofInstant(transactionDateParam.getDate("transactionDate", dateFormat, locale).toInstant(), ZoneId.systemDefault())
+                        .toLocalDate();
             }
             transactionData = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(loanId, transactionDate);
         } else if (is(commandParam, "refundbycash")) {
@@ -152,7 +156,9 @@ public class LoanTransactionsApiResource {
             if (transactionDateParam == null) {
                 transactionDate = DateUtils.getLocalDateOfTenant();
             } else {
-                transactionDate = LocalDate.fromDateFields(transactionDateParam.getDate("transactionDate", dateFormat, locale));
+                transactionDate = LocalDateTime
+                        .ofInstant(transactionDateParam.getDate("transactionDate", dateFormat, locale).toInstant(), ZoneId.systemDefault())
+                        .toLocalDate();
             }
             transactionData = this.loanReadPlatformService.retrieveLoanForeclosureTemplate(loanId, transactionDate);
         } else {

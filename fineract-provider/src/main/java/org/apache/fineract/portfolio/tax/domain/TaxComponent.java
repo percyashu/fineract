@@ -19,6 +19,9 @@
 package org.apache.fineract.portfolio.tax.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -44,7 +47,6 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.tax.api.TaxApiConstants;
-import org.joda.time.LocalDate;
 
 @Entity
 @Table(name = "m_tax_component")
@@ -97,7 +99,7 @@ public class TaxComponent extends AbstractAuditableCustom {
             this.creditAccountType = creditAccountType.getValue();
         }
         this.creditAcount = creditAcount;
-        this.startDate = startDate.toDate();
+        this.startDate = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 
     public static TaxComponent createTaxComponent(final String name, final BigDecimal percentage, final GLAccountType debitAccountType,
@@ -118,9 +120,9 @@ public class TaxComponent extends AbstractAuditableCustom {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(TaxApiConstants.percentageParamName);
             changes.put(TaxApiConstants.percentageParamName, newValue);
 
-            LocalDate oldStartDate = new LocalDate(this.startDate);
+            LocalDate oldStartDate = ZonedDateTime.ofInstant(this.startDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
             updateStartDate(command, changes, true);
-            LocalDate newStartDate = new LocalDate(this.startDate);
+            LocalDate newStartDate = ZonedDateTime.ofInstant(this.startDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
 
             TaxComponentHistory history = TaxComponentHistory.createTaxComponentHistory(this.percentage, oldStartDate, newStartDate);
             this.taxComponentHistories.add(history);
@@ -138,11 +140,11 @@ public class TaxComponent extends AbstractAuditableCustom {
             if (startDateFromUI != null) {
                 startDate = startDateFromUI;
             }
-            this.startDate = startDate.toDate();
+            this.startDate = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
             changes.put(TaxApiConstants.startDateParamName, startDate);
         } else if (setAsCurrentDate) {
             changes.put(TaxApiConstants.startDateParamName, startDate);
-            this.startDate = startDate.toDate();
+            this.startDate = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         }
 
     }
@@ -154,7 +156,7 @@ public class TaxComponent extends AbstractAuditableCustom {
     public LocalDate startDate() {
         LocalDate startDate = null;
         if (this.startDate != null) {
-            startDate = new LocalDate(this.startDate);
+            startDate = ZonedDateTime.ofInstant(this.startDate.toInstant(), ZoneId.systemDefault()).toLocalDate();
         }
         return startDate;
     }

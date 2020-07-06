@@ -20,6 +20,8 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,8 +54,6 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleP
 import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.MultiDisbursementEmiAmountException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.MultiDisbursementOutstandingAmoutException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.ScheduleDateException;
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
 
 public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGenerator {
 
@@ -202,7 +202,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             scheduledDueDate = termVariationParams.getScheduledDueDate();
             // Updates total days in term
-            scheduleParams.addLoanTermInDays(Days.daysBetween(scheduleParams.getPeriodStartDate(), scheduledDueDate).getDays());
+            scheduleParams.addLoanTermInDays(Period.between(scheduleParams.getPeriodStartDate(), scheduledDueDate).getDays());
             if (termVariationParams.isSkipPeriod()) {
                 continue;
             }
@@ -707,7 +707,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
                         if (!transactionDate.isEqual(scheduleParams.getPeriodStartDate()) || scheduleParams.getInstalmentNumber() == 1) {
 
-                            int periodDays = Days.daysBetween(scheduleParams.getPeriodStartDate(), transactionDate).getDays();
+                            int periodDays = Period.between(scheduleParams.getPeriodStartDate(), transactionDate).getDays();
                             // calculates period start date for interest
                             // calculation as per the configuration
                             periodStartDateApplicableForInterest = calculateInterestStartDateForPeriod(loanApplicationTerms,
@@ -715,7 +715,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                                     loanApplicationTerms.isInterestChargedFromDateSameAsDisbursalDateEnabled(),
                                     loanApplicationTerms.getExpectedDisbursementDate());
 
-                            int daysInPeriodApplicable = Days.daysBetween(periodStartDateApplicableForInterest, transactionDate).getDays();
+                            int daysInPeriodApplicable = Period.between(periodStartDateApplicableForInterest, transactionDate).getDays();
                             Money interestForThisinstallment = Money.zero(currency);
                             if (daysInPeriodApplicable > 0) {
                                 // 5 determine interest till the transaction
@@ -2241,7 +2241,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 totalFeeChargesCharged = totalFeeChargesCharged.plus(installment.getFeeChargesCharged(currency));
                 totalPenaltyChargesCharged = totalPenaltyChargesCharged.plus(installment.getPenaltyChargesCharged(currency));
                 instalmentNumber++;
-                loanTermInDays = Days.daysBetween(installment.getFromDate(), installment.getDueDate()).getDays();
+                loanTermInDays = Period.between(installment.getFromDate(), installment.getDueDate()).getDays();
 
                 if (loanApplicationTerms.isInterestRecalculationEnabled()) {
 

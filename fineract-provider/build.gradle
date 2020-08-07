@@ -212,12 +212,22 @@ jacoco {
     reportsDir = file("$buildDir/reports/jacoco")
 }
 
+
 jacocoTestReport {
+    jacocoTestReport.dependsOn test
     reports {
         html.enabled=true
         xml.enabled=true
-        html.destination file("${buildDir}/code-coverage")
+        html.destination file("${buildDir}/code-coverage-ut")
     }
+}
+
+configurations {
+    jacocoRuntime
+}
+
+dependencies {
+    jacocoRuntime "org.jacoco:org.jacoco.agent:${jacocoVersion}:runtime"
 }
 
 // Configuration for the spotless plugin
@@ -672,6 +682,8 @@ cargo {
             property 'cargo.tomcat.connector.clientAuth', false
             property 'cargo.protocol', 'https'
             property 'cargo.servlet.port', 8443
+            property 'cargo.start.jvmargs',"-javaagent:${configurations.jacocoRuntime.asPath}=destfile=$buildDir/jacoco/integrationTest.exec,output=file,append=true,jmx=true"
+
         }
     }
 }
@@ -724,6 +736,22 @@ task integrationTest(type:Test) {
     classpath = project.sourceSets.integrationTest.runtimeClasspath
 }
 
+task jacocoIntegrationTestReport(type:JacocoReport) {
+    executionData integrationTest
+    sourceSets sourceSets.main
+
+    dependsOn integrationTest
+    mustRunAfter cargoStopLocal
+
+    reports {
+        html.enabled=true
+        xml.enabled=true
+        html.destination file("${buildDir}/code-coverage-it")
+    }
+}
+
+integrationTest.finalizedBy jacocoIntegrationTestReport
+
 integrationTest {
     useJUnitPlatform()
     testLogging {
@@ -741,6 +769,25 @@ test {
         showStandardStreams = false
         exceptionFormat "full"
     }
+    finalizedBy jacocoTestReport
+}
+task jacocoMerge(type: JacocoMerge) {
+    executionData test, integrationTest
+    destinationFile = file("$buildDir/jacoco/merged.exec")
+
+    dependsOn jacocoTestReport, jacocoIntegrationTestReport
+}
+
+task coverageReport(type: JacocoReport) {
+    executionData jacocoMerge.destinationFile
+    sourceDirectories.setFrom(files(sourceSets.main.java.srcDirs))
+    classDirectories.setFrom(files(sourceSets.main.output.classesDirs))
+    reports {
+        html.enabled=true
+        xml.enabled=true
+        html.destination file("${buildDir}/code-coverage")
+    }
+    dependsOn jacocoMerge
 }
 
 // Configuration for the Checkstyle plugin

@@ -128,6 +128,7 @@ dependencyManagement {
         dependency 'org.mock-server:mockserver-junit-jupiter:5.11.0'
         dependency 'org.webjars.npm:swagger-ui-dist:3.31.1'
         dependency 'org.webjars:webjars-locator-core:0.46'
+        dependency 'org.jacoco:org.jacoco.agent:0.8.5'
 
         dependency ('org.dom4j:dom4j:2.1.3') {
             exclude 'relaxngDatatype:relaxngDatatype' // already in com.sun.xml.bind:jaxb-osgi:2.3.0.1
@@ -213,6 +214,10 @@ jacoco {
 }
 
 
+configurations {
+    jacocoRuntime
+}
+
 jacocoTestReport {
     jacocoTestReport.dependsOn test
     reports {
@@ -226,9 +231,6 @@ configurations {
     jacocoRuntime
 }
 
-dependencies {
-    jacocoRuntime "org.jacoco:org.jacoco.agent:${jacocoVersion}:runtime"
-}
 
 // Configuration for the spotless plugin
 // https://github.com/diffplug/spotless/tree/main/plugin-gradle
@@ -682,7 +684,7 @@ cargo {
             property 'cargo.tomcat.connector.clientAuth', false
             property 'cargo.protocol', 'https'
             property 'cargo.servlet.port', 8443
-            property 'cargo.start.jvmargs',"-javaagent:${configurations.jacocoRuntime.asPath}=destfile=$buildDir/jacoco/integrationTest.exec,output=file,append=true,jmx=true"
+            property 'cargo.start.jvmargs',"-javaagent:${configurations.jacocoRuntime.asPath}=destfile=$buildDir/jacoco/integrationTest.exec,output=file,append=true"
 
         }
     }
@@ -736,12 +738,21 @@ task integrationTest(type:Test) {
     classpath = project.sourceSets.integrationTest.runtimeClasspath
 }
 
+task size {
+    doLast {
+        long kb = file("$buildDir/jacoco/integrationTest.exec").length() / 1024
+        logger.info "File is ${kb}kb"
+        logger.warn "File is ${kb}kb"
+    }
+}
+
 task jacocoIntegrationTestReport(type:JacocoReport) {
     executionData integrationTest
     sourceSets sourceSets.main
 
     dependsOn integrationTest
     mustRunAfter cargoStopLocal
+    dependsOn size
 
     reports {
         html.enabled=true

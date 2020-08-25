@@ -166,6 +166,6 @@ public class ClasspathHellDuplicatesChecker {
                 || resourcePath.startsWith("org/checkerframework/dataflow/qual/")
                 // Pentaho reports harmless duplicates
                 || resourcePath.endsWith("overview.html") || resourcePath.endsWith("classic-engine.properties")
-                || resourcePath.endsWith("loader.properties");
+                || resourcePath.endsWith("loader.properties") || resourcePath.startsWith("classes-instrumented/");
     }
 }

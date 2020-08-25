@@ -32,9 +32,6 @@ project.ext.jerseyVersion = '1.19.4'
 ext["groovy.version"] = '3.0.3'
 
 buildscript {
-    ext {
-        jacocoVersion = '0.8.5'
-    }
     repositories {
         jcenter()
         mavenCentral()
@@ -75,7 +72,6 @@ apply plugin: 'openjpa'
 apply plugin: "com.github.spotbugs"
 apply plugin: 'checkstyle'
 apply plugin: 'com.github.andygoossens.gradle-modernizer-plugin'
-apply plugin: 'jacoco'
 apply plugin: "com.gorylenko.gradle-git-properties"
 apply plugin: "net.ltgt.errorprone"
 apply plugin: "com.diffplug.spotless"
@@ -221,19 +217,14 @@ resolve {
 
 resolve.dependsOn prepareInputYaml
 
-// Configuration for JaCoCo code coverage task
-// https://www.eclemma.org/jacoco/
-jacoco {
-    toolVersion = jacocoVersion
-    reportsDir = file("$buildDir/reports/jacoco")
+configurations {
+    jacocoAnt
+    jacocoRuntime
 }
 
-jacocoTestReport {
-    reports {
-        html.enabled=true
-        xml.enabled=true
-        html.destination file("${buildDir}/code-coverage")
-    }
+dependencies {
+    jacocoAnt group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.8.4', classifier: 'nodeps'
+    jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.8.4', classifier: 'runtime'
 }
 
 // Configuration for the spotless plugin
@@ -654,6 +645,52 @@ task licenseFormatBuildScripts (type:nl.javadude.gradle.plugins.license.License)
 }
 licenseFormat.dependsOn licenseFormatBuildScripts
 
+task instrument(dependsOn: ['classes']) {
+    ext.outputDir = buildDir.path +  '/classes-instrumented'
+    doLast {
+        ant.taskdef(name: 'instrument',
+        classname: 'org.jacoco.ant.InstrumentTask',
+        classpath: configurations.jacocoAnt.asPath)
+        ant.instrument(destdir: outputDir) {
+            fileset(dir: sourceSets.main.java.outputDir, includes: '**/*.class', erroronmissingdir: false)
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(instrument)) {
+        tasks.withType(Test) {
+            doFirst {
+                systemProperty 'jacoco-agent.destfile', buildDir.path +  '/jacoco/tests.exec'
+                classpath = files(instrument.outputDir)  + classpath +  configurations.jacocoRuntime
+            }
+        }
+    }
+}
+
+task report(dependsOn: ['instrument', 'test']) {
+    doLast {
+        ant.taskdef(name: 'report',
+        classname: 'org.jacoco.ant.ReportTask',
+        classpath: configurations.jacoco.asPath)
+        ant.report() {
+            executiondata {
+                ant.file(file: buildDir.path +  '/jacoco/tests.exec')
+            }
+            structure(name: 'Example') {
+                classfiles {
+                    fileset(dir: sourceSets.main.output.classesDir)
+                }
+                sourcefiles {
+                    fileset(dir: 'src/main/java')
+                }
+            }
+            html(destdir: buildDir.path  + '/reports/jacoco')
+        }
+    }
+}
+
+
 // Configuration for the errorprone plugin
 // https://github.com/tbroyer/gradle-errorprone-plugin
 dependencies {
@@ -759,6 +796,8 @@ test {
         exceptionFormat "full"
     }
 }
+test.dependsOn instrument
+test.finalizedBy report
 
 // Configuration for the Checkstyle plugin
 // https://docs.gradle.org/current/userguide/checkstyle_plugin.html

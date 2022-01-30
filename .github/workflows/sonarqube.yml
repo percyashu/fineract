@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
         TZ: Asia/Kolkata
-        SONAR_ORGANIZATION: apache
+        SONAR_ORGANIZATION: percyashu
         SONAR_HOST_URL: https://sonarcloud.io
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

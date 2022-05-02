@@ -214,7 +214,7 @@ allprojects  {
             dependency 'org.springdoc:springdoc-openapi-security:1.6.8'
             dependency 'org.springdoc:springdoc-openapi-javadoc:1.6.8'
 
-            dependency ('org.apache.activemq:activemq-broker:5.17.0') {
+            dependency ('org.apache.activemq:activemq-broker:5.17.1') {
                 exclude 'javax.annotation:javax.annotation-api'
             }
 
